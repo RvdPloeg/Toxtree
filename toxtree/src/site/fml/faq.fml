@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<faqs title="Frequently Asked Questions">
+  <part id="General">
+    <faq id="T1">
+      <question>Which is the latest Toxtree version?</question>
+      <answer>
+        <p>
+          <a href='http://toxtree.sourceforge.net/download.html#Toxtree_3.1.0'>Toxtree 3.1.0</a> is the latest stable release.
+          The latest development version is ToxTree 3.2.0-SNAPSHOT (<a href="https://nexus.ideaconsult.net/#nexus-search;gav~toxtree~~3.2.0-SNAPSHOT~~">Maven repository</a>). 
+        </p>
+      </answer>
+    </faq>
+    <faq id="T2">
+      <question>What is the format of Toxtree input files?</question>
+      <answer>
+        <p>
+     The list of supported file formats can be found in the <a href="http://sourceforge.net/projects/toxtree/files/toxtree/Toxtree-v.2.5.0/Toxtree_user_manual.pdf/download">user manual</a>. 
+     A brief list of the most common formats follows: 
+     <ul>
+     <li><i>filename.SDF</i> is <a href="https://en.wikipedia.org/wiki/Chemical_table_file#SDF">Structure Data Format</a></li>
+     <li><i>filename.CSV</i> is comma delimited text file,with mandatory header row. 
+     A column,containing SMILES, should have title "SMILES". The number,titles and order of the columns are arbitrary. <a href='https://toxtree.svn.sourceforge.net/svnroot/toxtree/trunk/toxtree/toxtree-plugins/toxtree-cramer/src/test/resources/Cramer/CramerRules.csv'>Example</a></li>
+     <source>
+NAME,CAS,SMILES
+Acetic acid,64-19-7,CC(O)=O
+Acetoin,513-86-0,CC(O)C(C)=O
+     </source>
+     <li><i>filename.TXT</i> is tab delimited text file. A column,containing SMILES, should have title "SMILES".  The number,titles and order of the columns are arbitrary.</li>
+     </ul>     
+        </p>
+      </answer>
+    </faq>    
+     <faq id="T3">
+      <question>I use Toxtree version 2.5.0. If I try to use a chemical identifier, I receive a message like "failed to retrieve from remote server"?. However, it works, if using chemical names.</question>
+      <answer>
+        <p>
+		Chemical identifiers are resolved via remote server (if enabled). The remote query may fail to retrieve an identifier for the following reasons:
+		<ul>
+		<li>The identifier is not found at the server.</li>
+		<li>Your computer is behind a firewall, blocking port 8080, and preventing the remote query. </li>
+		</ul>
+		Chemical names are parsed locally, and do not require remote query. 
+
+        </p>
+      </answer>
+    </faq>         
+    <faq id="K1">
+      <question>How to specify daily intakes in a batch file,for computation of Kroes TTC?</question>
+      <answer>
+        <p>
+           The amount of daily intake (in <i>microgram/day</i>) can be specified as an additional column / SDfile field, with the name "<b>DailyIntake</b>".
+           The following files are example of the proper formatting (the values are for illustration only):
+           <ul> 	
+           <li><a href='./examples/kroes.csv'>Input .CSV  file example</a></li> 
+           <li><a href='./examples/kroes.sdf'>Input .SDF  file example</a></li>
+           
+           <li><a href='./examples/kroes-predictions.csv'>Output .CSV  file</a></li>
+           <li><a href='./examples/kroes-processing.sdf'>Output .SDF  file</a></li>
+           </ul>
+        </p>
+      </answer>
+    </faq>
+ 
+    <faq id="K2">
+      <question>How to run Toxtree predictions from (Java) code?</question>
+      <answer>
+        <p>
+          <ul>
+          <li>Java standalone example
+<a href="https://nexus.ideaconsult.net/#nexus-search;classname~CramerRules">Toxtree</a> and 
+<a href="https://nexus.ideaconsult.net/#nexus-search;gav~org.openscience.cdk~~1.4.11~~">CDK</a> dependencies up to v1.4.11 are available via <a href="https://nexus.ideaconsult.net/#nexus-search;quick~toxtree">Maven</a> repository. 
+Examples how to use Apache Maven for Java project management <a href="http://ideaconsult.github.com/examples-maven/">here</a>.  <a href="https://github.com/ideaconsult/examples-toxtree">More Toxtree examples</a>.
+</li>
+<source>
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.junit.Test;
+import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.io.iterator.IteratingMDLReader;
+import org.openscience.cdk.silent.SilentChemObjectBuilder;
+
+import toxTree.core.IDecisionResult;
+import toxTree.tree.cramer.CramerRules;
+
+
+
+public class ToxTreeAppTest {
+
+        public static void main(String[] args) {
+                CramerRules rules = new CramerRules();
+                IDecisionResult result = rules.createDecisionResult();
+                result.setDecisionMethod(rules);
+                InputStream in = new FileInputStream("myfile.sdf");
+                IteratingMDLReader reader =
+                         new IteratingMDLReader(in,SilentChemObjectBuilder.getInstance());
+                OutputStream out = new FileOutputStream("result.sdf");
+                MDLWriter writer = new MDLWriter(out);
+                while (reader.hasNext()) {
+                        IAtomContainer molecule = ((IAtomContainer)reader.next());
+                        result.classify(molecule);
+                        result.assignResult(molecule);
+                        //Just print the result
+                        for (String resultProperty : result.getResultPropertyNames())
+                                System.out.println(String.format("%s=%s",
+                                resultProperty,molecule.getProperty(resultProperty)));
+                        //save all properties (both read from the input file and calculated)
+                        writer.setSdFields(molecule.getProperties());
+                        writer.write(molecule);
+                }
+                out.close();
+                reader.close();
+        }
+}
+</source>
+		 <li>
+		 OpenTox API web services.<br/>
+Toxtree modules are avalable as <a href="http://apps.ideaconsult.net/ambit2/model?max=25">OpenTox REST API web services</a>. 
+The example assumes your dataset is uploaded to an <a href="http://apps.ideaconsult.net/ambit2/dataset?max=25">OpenTox dataset service</a>.
+<source>
+curl -X POST -d "dataset_uri=http://apps.ideaconsult.net:8080/ambit2/dataset/{yourdataset}" \
+                http://apps.ideaconsult.net/ambit2/model/2 
+</source>
+The dataset service accepts common chemical data formats for upload via HTTP POST calls. More OpenTox <a href="http://ambit.sourceforge.net/api.html">API examples</a>.
+		 </li>
+		 </ul>
+        </p>
+      </answer>
+    </faq>
+
+  <faq id="K3">
+      <question>How to use Toxtree on command line only (headless, without UI) and select specific module?</question>
+      <answer>
+        <ul>
+		<li>For headless Toxtree, use the option -n</li>
+		<li>To select a module, use option -m</li>
+        </ul>
+<source>
+	java -jar Toxtree-3.1.0.1851.jar --help
+	 -b,--batch [file]     Batch file
+	 -h,--help             This help
+	 -i,--input [file]     Input file
+	 -m,--module [class]   Full class name of a Toxtree plugin 
+	 -n,--noui             Command line only, do not start UI
+	 -o,--output [file]    Output file
+</source>	 
+<p>Example:</p>
+
+<source>
+ java -jar Toxtree-3.1.0.1851.jar -n -i test.csv -o out.csv  
+ java -jar Toxtree-3.1.0.1851.jar -i test.csv -n -o out.csv -m toxtree.plugins.ames.AmesMutagenicityRules
+    		 
+</source>        
+
+<p> The full class names are as follow:
+</p>
+<ul>
+<li>toxtree.plugins.ames.AmesMutagenicityRules</li>
+<li>com.molecularnetworks.start.BiodegradationRules</li>
+<li>toxTree.tree.cramer.CramerRules</li>
+<li>cramer2.CramerRulesWithExtensions</li>
+<li>toxtree.tree.cramer3.RevisedCramerDecisionTree</li>
+<li>toxtree.plugins.dnabinding.DNABindingPlugin</li>
+<li>eye.EyeIrritationRules</li>
+<li>toxtree.plugins.func.FuncRules</li>
+<li>toxtree.plugins.kroes.Kroes1Tree</li>
+<li>mic.MICRules</li>
+<li>michaelacceptors.MichaelAcceptorRules</li>
+<li>toxtree.plugins.moa.MOARules</li>
+<li>mutant.BB_CarcMutRules</li>
+<li>toxtree.plugins.proteinbinding.ProteinBindingPlugin</li>
+<li>sicret.SicretRules</li>
+<li>toxtree.plugins.smartcyp.SMARTCYPPlugin</li>
+<li>verhaar.VerhaarScheme</li>
+<li>verhaar2.VerhaarScheme2</li>
+</ul>
+      </answer>
+    </faq>        
+
+
+ 
+  </part>
+</faqs>
